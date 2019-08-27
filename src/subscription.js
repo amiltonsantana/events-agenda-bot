@@ -48,8 +48,14 @@ const createSubscriptionEvent = (event) => {
 };
 
 const get = async () => {
-  const resp = await axios.get(`${apiUrl}/subscriptions`);
-  return resp.data;
+  try {
+    const resp = await axios.get(`${apiUrl}/subscriptions`);
+    return resp.data;
+  } catch (e) {
+    console.log('> Usuário não tem subscription!');
+  }
+
+  return [];
 };
 
 const findByUserId = async (userId) => {
