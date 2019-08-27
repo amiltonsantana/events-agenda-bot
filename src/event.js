@@ -1,6 +1,10 @@
+require('dotenv/config');
+
 const axios = require('axios');
 
-const apiUrl = require('../credentials/api.json').url;
+const credentialApiUrl = require('../credentials/api.json').url;
+
+const apiUrl = process.env.API_URL || credentialApiUrl;
 
 const listEventsTags = (events) => {
   const allTags = [];

@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
+require('dotenv/config');
+
 const TelegramBot = require('node-telegram-bot-api');
-// const axios = require('axios');
 const moment = require('moment');
 
 moment.locale('pt-br');
@@ -14,7 +15,7 @@ const subscription = require('./src/subscription');
 const tagDao = require('./src/tag');
 
 async function start() {
-  const bot = new TelegramBot(botApiKey, { polling: true });
+  const bot = new TelegramBot(process.env.TELEGRAM_API_KEY || botApiKey, { polling: true });
 
   const sendErrorMessage = (chatId) => {
     const message = 'Puts. Tive um probleminha. Poderia tentar mais tarde?.';
