@@ -48,7 +48,7 @@ async function publicAgendaBot() {
     }
 
     console.log('> Buscando a Lista de Eventos.');
-    const eventList = eventDao.listEvents();
+    const eventList = await eventDao.listEvents();
 
     if (eventList && eventList.length) {
       console.log('> Salvando o userState do usuário.');
