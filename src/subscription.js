@@ -3,7 +3,8 @@ const moment = require('moment');
 
 moment.locale('pt-br');
 
-const apiUrl = require('../credentials/api.json').url;
+// const apiUrl = require('../credentials/api.json').url;
+const apiUrl = process.env.API_URL;
 
 const create = async (user) => {
   const subscription = {

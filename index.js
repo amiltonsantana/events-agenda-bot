@@ -6,8 +6,8 @@ const moment = require('moment');
 
 moment.locale('pt-br');
 
-const botApiKey = require('./credentials/telegram.json').apiKey;
-// const apiUrl = require('./credentials/api.json').url;
+// const botApiKey = require('./credentials/telegram.json').apiKey;
+const botApiKey = process.env.TELEGRAM_API_KEY;
 
 const eventDao = require('./src/event');
 const state = require('./src/state');
