@@ -1,1 +1,1 @@
-# public-agenda
+# public-agenda-bot
