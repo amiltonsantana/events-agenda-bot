@@ -18,8 +18,8 @@ const create = async (user) => {
     const resp = await axios.post(`${apiUrl}/subscriptions`, subscription);
     return resp.data;
   } catch (e) {
+    // eslint-disable-next-line no-console
     console.log(`> Erro ao criar subscription para o usuário ${user.id}!`);
-    console.log(e);
   }
   return false;
 };
@@ -52,6 +52,7 @@ const get = async () => {
     const resp = await axios.get(`${apiUrl}/subscriptions`);
     return resp.data;
   } catch (e) {
+    // eslint-disable-next-line no-console
     console.log('> Usuário não tem subscription!');
   }
 
@@ -63,6 +64,7 @@ const findByUserId = async (userId) => {
     const resp = await axios.get(`${apiUrl}/subscriptions?userId=${userId}`);
     return resp.data;
   } catch (e) {
+    // eslint-disable-next-line no-console
     console.log('> Usuário não tem subscription!');
   }
 

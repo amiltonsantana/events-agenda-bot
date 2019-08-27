@@ -4,17 +4,18 @@ require('dotenv/config');
 const TelegramBot = require('node-telegram-bot-api');
 const moment = require('moment');
 
+TelegramBot.Promise = global.Promise;
 moment.locale('pt-br');
 
 // const botApiKey = require('./credentials/telegram.json').apiKey;
 const botApiKey = process.env.TELEGRAM_API_KEY;
 
-const eventDao = require('./src/event');
-const state = require('./src/state');
-const subscription = require('./src/subscription');
-const tagDao = require('./src/tag');
+const eventDao = require('./clients/event');
+const state = require('./state');
+const subscription = require('./clients/subscription');
+const tagDao = require('./tag');
 
-async function start() {
+async function publicAgendaBot() {
   const bot = new TelegramBot(process.env.TELEGRAM_API_KEY || botApiKey, { polling: true });
 
   const sendErrorMessage = (chatId) => {
@@ -266,4 +267,4 @@ async function start() {
   });
 }
 
-start();
+module.exports = publicAgendaBot;

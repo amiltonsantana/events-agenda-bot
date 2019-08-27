@@ -7,7 +7,7 @@ moment.locale('pt-br');
 // const botApiKey = require('./credentials/telegram.json').apiKey;
 const botApiKey = process.env.TELEGRAM_API_KEY;
 
-const subscription = require('./src/subscription');
+const subscription = require('./src/clients/subscription');
 
 const start = async () => {
   const bot = new TelegramBot(botApiKey);
