@@ -1,14 +1,42 @@
-const fs = require('fs');
+require('dotenv/config');
 
-const DATA_PATH = '../data';
+const fs = require('fs');
+const redis = require('redis');
+
+let redisClient = null;
+
+if (process.env.REDIS_ENABLED) {
+  redisClient = redis.createClient(process.env.REDIS_URL);
+}
+
+const DATA_PATH = './data';
+
+if (redisClient) {
+  redisClient.on('error', (err) => {
+    console.log(`> Redis Error: ${err}`);
+  });
+}
 
 const saveJsonObject = (content, filePath) => {
-  const contentString = JSON.stringify(content);
-  fs.writeFileSync(filePath, contentString);
+  if (process.env.REDIS_ENABLED) {
+    redisClient.set(filePath, content);
+    redisClient.expire(filePath, 600);
+  } else {
+    const contentString = JSON.stringify(content);
+    fs.writeFileSync(filePath, contentString);
+  }
 };
 
 const loadJsonObject = (filePath) => {
-  if (fs.existsSync(filePath)) {
+  if (process.env.REDIS_ENABLED) {
+    redisClient.get(filePath, (err, res) => {
+      if (res) {
+        redisClient.expire(filePath, 600);
+        return res;
+      }
+      return false;
+    });
+  } else if (fs.existsSync(filePath)) {
     const fileBuffer = fs.readFileSync(filePath, 'utf-8');
     return JSON.parse(fileBuffer);
   }
