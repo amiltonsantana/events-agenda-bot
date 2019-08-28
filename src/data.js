@@ -49,7 +49,13 @@ const saveUserState = (userState, userId, charId) => {
 
 const loadUserState = (userId, chatId) => loadJsonObject(`${DATA_PATH}/${userId}-${chatId}-state.json`);
 
-const getTagList = () => loadJsonObject(`${DATA_PATH}/tags.json`);
+const getTagList = () => {
+  const tagList = loadJsonObject(`${DATA_PATH}/tags.json`);
+  if (tagList) {
+    return tagList;
+  }
+  return [];
+};
 
 const saveTagList = (tagList) => {
   saveJsonObject(tagList, `${DATA_PATH}/tags.json`);
