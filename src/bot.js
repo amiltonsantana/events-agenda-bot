@@ -172,7 +172,7 @@ async function publicAgendaBot() {
         console.log('> Adicionando a tag na userSubscription.');
         if (subscription.addTag(userSubscription, subscriptionTag)) {
           console.log(`> Adicionando os eventos da tag '${subscriptionTag}' na userSubscription.`);
-          const events = eventDao.listEventsTags(subscriptionTag);
+          const events = eventDao.findByTag(subscriptionTag);
 
           if (events && events.length) {
             subscription.addEvents(userSubscription, events);
