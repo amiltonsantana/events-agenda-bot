@@ -13,7 +13,7 @@ const botApiKey = process.env.TELEGRAM_API_KEY;
 const eventDao = require('./clients/event');
 const state = require('./state');
 const subscription = require('./clients/subscription');
-const tagDao = require('./tag');
+const tagDao = require('./clients/tag');
 
 async function publicAgendaBot() {
   const bot = new TelegramBot(process.env.TELEGRAM_API_KEY || botApiKey, { polling: true });
@@ -30,6 +30,13 @@ async function publicAgendaBot() {
   const tagsToReplyMarkups = (tagList) => {
     const replyMarkups = [];
     tagList.forEach(tagItem => replyMarkups.push([tagItem]));
+
+    return replyMarkups;
+  };
+
+  const tagObjectsToReplyMarkups = (tagObjects) => {
+    const replyMarkups = [];
+    tagObjects.forEach(tagItem => replyMarkups.push([tagItem.tag]));
 
     return replyMarkups;
   };
@@ -58,13 +65,13 @@ async function publicAgendaBot() {
       const eventTags = eventDao.listEventsTags(eventList);
 
       console.log('> Atualizando a lista de tags existentes.');
-      tagDao.updateTagList(eventTags);
+      tagDao.addTagList(eventTags);
 
       console.log('> Transformando a lista de tags em opções de resposta.');
       const replyMarkups = tagsToReplyMarkups(eventTags);
       console.log(replyMarkups);
 
-      const message = `Olá ${userState.user.first_name}. Sobre qual tema você quer saber?`;
+      const message = `Olá ${userState.user.first_name}. Sobre qual tipo de evento você quer saber?`;
       bot.sendMessage(userState.chat.id, message, {
         reply_markup: {
           keyboard: replyMarkups,
@@ -76,7 +83,7 @@ async function publicAgendaBot() {
     }
   };
 
-  const askSubscriptionTags = (msg) => {
+  const askSubscriptionTags = async (msg) => {
     console.log('> Verificando se ja existe um userState para esse usuário.');
     let userState = state.getUserState(msg.from.id, msg.chat.id);
 
@@ -93,10 +100,10 @@ async function publicAgendaBot() {
     state.saveUserState(userState);
 
     console.log('> Buscando a lista de tags existentes.');
-    const tagList = tagDao.getList();
+    const tagList = await tagDao.getList();
 
     console.log('> Transformando a lista de tags em opções de resposta.');
-    const replyMarkups = tagsToReplyMarkups(tagList);
+    const replyMarkups = tagObjectsToReplyMarkups(tagList);
     console.log(replyMarkups);
 
     // Perguntar qual tema o usuário deseja obter alertas
@@ -149,13 +156,23 @@ async function publicAgendaBot() {
     } else {
       const message = `${userState.user.first_name}. No momento, não temos eventos cadastrados com o tema '#${searchTag}'.`;
       bot.sendMessage(userState.chat.id, message);
+      if (userState) {
+        console.log('> Limpando o context do userState desse usuário.');
+        const uState = userState;
+        uState.context.subject = '';
+        uState.context.children = [];
+
+        console.log('> Salvando o userState do usuário.');
+        state.saveUserState(uState);
+      }
     }
   };
 
   const handleSubscriptionTag = async (subscriptionTag, userState) => {
     console.log('> Verificando se a informação enviada pelo usuário é uma tag válida.');
-    const tagList = tagDao.getList();
-    if (tagList.find(tag => tag === subscriptionTag)) {
+    const tagList = await tagDao.getList();
+
+    if (tagList.find(tagObject => tagObject.tag === subscriptionTag)) {
       let [userSubscription] = await subscription.findByUserId(userState.user.id);
 
       if (userSubscription && userSubscription.tags.find(tag => tag === subscriptionTag)) {
@@ -191,6 +208,15 @@ async function publicAgendaBot() {
     } else {
       const message = `${userState.user.first_name}, o tema ${subscriptionTag} não existe.`;
       bot.sendMessage(userState.chat.id, message);
+      if (userState) {
+        console.log('> Limpando o context do userState desse usuário.');
+        const uState = userState;
+        uState.context.subject = '';
+        uState.context.children = [];
+
+        console.log('> Salvando o userState do usuário.');
+        state.saveUserState(uState);
+      }
     }
   };
 
@@ -239,7 +265,7 @@ async function publicAgendaBot() {
       console.log('> Verificando se ja existe um userState para esse usuário.');
       const userState = state.getUserState(userId, chatId);
 
-      if (userState) {
+      if (userState && userState.context.subject) {
         console.log('> Ja existe um userState para esse usuário.');
         let replyMsg;
         if (msg.reply_to_message) {
@@ -260,7 +286,8 @@ async function publicAgendaBot() {
           bot.sendMessage(chatId, message);
         }
       } else {
-        const message = `Olá ${userName}. O que você deseja saber?`;
+        let message = `Olá ${userName}.\n`;
+        message += 'Bem vindo ao Robô do Ocupa Mãe. Para saber sobre nossos próximos eventos, digite /eventos';
         bot.sendMessage(chatId, message);
       }
     }
