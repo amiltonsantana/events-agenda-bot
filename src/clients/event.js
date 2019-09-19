@@ -1,5 +1,9 @@
 require('dotenv/config');
 
+const moment = require('moment');
+
+moment.locale('pt-br');
+
 const axios = require('axios');
 
 // const credentialApiUrl = require('../credentials/api.json').url;
@@ -19,7 +23,7 @@ const listEventsTags = (events) => {
 
 const listEvents = async () => {
   try {
-    const resp = await axios.get(`${apiUrl}/events`);
+    const resp = await axios.get(`${apiUrl}/events?currentEvents=true`);
     return resp.data;
   } catch (e) {
     // eslint-disable-next-line no-console
@@ -41,8 +45,19 @@ const findByTag = async (tag) => {
   return [];
 };
 
+const toString = (event) => {
+  let eventMsg = `${moment(event.startDate).format('LLLL')} até às ${moment(event.endDate).format('LT')} `;
+  eventMsg += `terá o evento '${event.summary}' `;
+  eventMsg += `(<b>${moment(event.startDate).fromNow()}</b>)`;
+  eventMsg += `\n\n<b>Local</b>: ${event.place}`;
+  eventMsg += `\n<b>Endereço:</b> ${event.address}`;
+
+  return eventMsg;
+};
+
 module.exports = {
   listEventsTags,
   listEvents,
   findByTag,
+  toString,
 };

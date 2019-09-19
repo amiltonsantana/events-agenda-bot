@@ -131,11 +131,7 @@ async function publicAgendaBot() {
       });
 
       events.forEach((event) => {
-        let eventMsg = `${moment(event.startDate).format('LLLL')} até às ${moment(event.endDate).format('LT')} `;
-        eventMsg += `terá o evento '${event.summary}' `;
-        eventMsg += `(<b>${moment(event.startDate).fromNow()}</b>)`;
-        eventMsg += `\n<b>Local</b>: ${event.place}`;
-        eventMsg += `\n<b>Endereço:</b> ${event.address}`;
+        const eventMsg = eventDao.toString(event);
 
         bot.sendMessage(userState.chat.id, eventMsg, {
           parse_mode: 'HTML',
@@ -148,13 +144,75 @@ async function publicAgendaBot() {
         });
       });
 
-      message = 'Se quiser saber mais detalhes de algum evento, basta responder o evento desejado com o mensagem \'mais detalhes\'.';
-      bot.sendMessage(userState.chat.id, message);
+      message = 'Se quiser saber mais detalhes de algum evento, toque no evento desejado e responda com a mensagem <b>\'mais detalhes\'</b>.\n';
+      message += '\nPara receber alertas de algum evento, basta responder o evento desejado com o mensagem <b>\'receber alertas\'</b>.';
 
-      message = 'Se quiser receber alertas de algum evento, basta responder o evento desejado com o mensagem \'receber alertas\'.';
-      bot.sendMessage(userState.chat.id, message);
+      bot.sendMessage(userState.chat.id, message, {
+        parse_mode: 'HTML',
+      });
     } else {
       const message = `${userState.user.first_name}. No momento, não temos eventos cadastrados com o tema '#${searchTag}'.`;
+      bot.sendMessage(userState.chat.id, message);
+      if (userState) {
+        console.log('> Limpando o context do userState desse usuário.');
+        const uState = userState;
+        uState.context.subject = '';
+        uState.context.children = [];
+
+        console.log('> Salvando o userState do usuário.');
+        state.saveUserState(uState);
+      }
+    }
+  };
+
+  const sendEventList = async (msg) => {
+    console.log('> Verificando se ja existe um userState para esse usuário.');
+    let userState = state.getUserState(msg.from.id, msg.chat.id);
+
+    if (!userState) {
+      console.log('> Criando um userState para esse usuário.');
+      userState = state.createUserState(msg);
+    } else {
+      console.log('> Limpando o context do userState desse usuário.');
+      userState.context.subject = msg.text;
+      userState.context.children = [];
+    }
+
+    console.log('> Buscando a Lista de Eventos.');
+    const events = await eventDao.listEvents();
+
+    if (events && events.length) {
+      let message = 'Segue a lista dos eventos:';
+      await bot.sendMessage(userState.chat.id, message, {
+        reply_markup: {
+          remove_keyboard: true,
+        },
+      });
+
+      events.forEach((event) => {
+        const eventMsg = eventDao.toString(event);
+
+        const sendMessageBot = bot.sendMessage(userState.chat.id, eventMsg, {
+          parse_mode: 'HTML',
+        }).then((res) => {
+          const importantMessage = state.createImportantMessage(res, event);
+
+          userState.importantMessages.push(importantMessage);
+
+          state.saveUserState(userState);
+        });
+
+        console.log(sendMessageBot);
+      });
+
+      message = 'Se quiser saber mais detalhes de algum evento, toque no evento desejado e responda com a mensagem <b>\'mais detalhes\'</b>.\n';
+      message += '\nPara receber alertas de algum evento, basta responder o evento desejado com o mensagem <b>\'receber alertas\'</b>.';
+
+      bot.sendMessage(userState.chat.id, message, {
+        parse_mode: 'HTML',
+      });
+    } else {
+      const message = `${userState.user.first_name}. No momento, não temos eventos cadastrados.`;
       bot.sendMessage(userState.chat.id, message);
       if (userState) {
         console.log('> Limpando o context do userState desse usuário.');
@@ -241,7 +299,7 @@ async function publicAgendaBot() {
       const message = `${userState.user.first_name}, você já cadastrou alertas para o evento '${event.summary}'.`;
       bot.sendMessage(userState.chat.id, message);
     } else if (userSubscription && subscription.addEvent(userSubscription, event)) {
-      const message = `Pronto. Enviarei alertas para o evento '${event.summary}'.`;
+      const message = `Pronto. Você será avisada sobre o evento '${event.summary}'.`;
       bot.sendMessage(userState.chat.id, message);
     } else {
       sendErrorMessage(bot, userState.chat.id);
@@ -259,8 +317,14 @@ async function publicAgendaBot() {
 
     if (msg.text.match(/\/eventos/)) {
       askCurrentEventTags(msg);
+    } else if (msg.text.match(/\/queroocupar/)) {
+      sendEventList(msg);
     } else if (msg.text.match(/\/alertas/)) {
       askSubscriptionTags(msg);
+    } else if (msg.text.match(/\/start/)) {
+      let message = `Olá ${userName}.\n`;
+      message += 'Bem vinda ao Robô do Ocupa Mãe.\nDigite /queroocupar para acessar nossa agenda.';
+      bot.sendMessage(chatId, message);
     } else {
       console.log('> Verificando se ja existe um userState para esse usuário.');
       const userState = state.getUserState(userId, chatId);
@@ -284,10 +348,19 @@ async function publicAgendaBot() {
         } else {
           const message = `Não entendi ${userName}. O que você deseja saber?`;
           bot.sendMessage(chatId, message);
+          if (userState) {
+            console.log('> Limpando o context do userState desse usuário.');
+            const uState = userState;
+            uState.context.subject = '';
+            uState.context.children = [];
+
+            console.log('> Salvando o userState do usuário.');
+            state.saveUserState(uState);
+          }
         }
       } else {
         let message = `Olá ${userName}.\n`;
-        message += 'Bem vindo ao Robô do Ocupa Mãe. Para saber sobre nossos próximos eventos, digite /eventos';
+        message += 'Bem vinda ao Robô do Ocupa Mãe.\nDigite /queroocupar para acessar nossa agenda.';
         bot.sendMessage(chatId, message);
       }
     }
